@@ -28,3 +28,9 @@ dist-ssr
 .env
 .env.*
 !.env.example
+
+# Internal development material: playtest harness scripts and working notes.
+# Kept locally, not published. Anchored to the repository root so nothing
+# inside src/ or public/ can be matched by accident.
+/.playtest/
+/docs/
