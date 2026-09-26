@@ -1,0 +1,158 @@
+:root {
+  /* Figma frame "H1" palette */
+  --ink-blue: #437fed;
+  --sky-blue: #5bb9ff;
+  --atom-grey: #b4b4b4;
+  --caption-grey: #9c9090;
+  --body-grey: #6d6d6d;
+
+  font-family: Lexend, system-ui, sans-serif;
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #ffffff;
+}
+
+p {
+  margin: 0;
+}
+
+/* Fixed design canvas -------------------------------------------------- */
+
+.stageHost {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+/*
+ * Placed by the fit (left/top/scale from `layout/designFit`), from its top-left
+ * corner - the same placement the gameplay uses for its frame.
+ */
+.stageCanvas {
+  position: absolute;
+  transform-origin: 0 0;
+  background: #ffffff;
+}
+
+/* Outlined display heading --------------------------------------------- */
+
+/*
+ * Figma fills the heading with `transparent`; the letterforms read as an
+ * outline. CSS reproduces that with a text stroke.
+ */
+.outlinedHeading {
+  -webkit-text-stroke: 1.5px #a8a8a8;
+  paint-order: stroke fill;
+}
+
+/* Sign-in card --------------------------------------------------------- */
+
+.signInCard {
+  transition: transform 120ms ease, filter 120ms ease;
+}
+
+.signInCard:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.signInCard:active:not(:disabled) {
+  transform: translateY(0);
+  filter: brightness(0.99);
+}
+
+.signInCard:focus-visible {
+  outline: 3px solid var(--ink-blue);
+  outline-offset: 4px;
+}
+
+.signInCard:disabled {
+  cursor: progress;
+}
+
+/* Prefix rail ---------------------------------------------------------- */
+
+.prefixChip:focus-visible {
+  outline: 3px solid var(--ink-blue);
+  outline-offset: 6px;
+  border-radius: 20px;
+}
+
+/*
+ * Copy swap on the instruction card. The Figma frame carries no authored
+ * keyframes, so this is the project's own crossfade.
+ */
+.cardCopy {
+  animation: cardCopyIn 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes cardCopyIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cardCopy {
+    animation: none;
+  }
+}
+
+/* Bond screens: the instruction panel doubles as the continue control. */
+.panelContinue {
+  cursor: pointer;
+}
+
+.panelContinue:focus-visible {
+  outline: 3px solid var(--ink-blue);
+  outline-offset: 6px;
+  border-radius: 20px;
+}
+
+/* Gameplay flow ---------------------------------------------------------- */
+
+.sceneHotspot > * {
+  cursor: pointer;
+}
+
+.sceneHotspot:focus-visible > * {
+  outline: 3px solid var(--ink-blue);
+  outline-offset: 6px;
+}
+
+
+/*
+ * Keyboard targets in the live game. They are invisible and have no pointer
+ * events - mouse play goes straight through them to the play surface - but
+ * they take focus, so the game can be played from the keyboard and read by a
+ * screen reader. The ring is the only thing they ever draw.
+ */
+.gameTarget {
+  outline: none;
+  border: none;
+  background: transparent;
+}
+.gameTarget:focus-visible {
+  outline: 3px solid #0795ff;
+  outline-offset: 2px;
+  background: rgba(7, 149, 255, 0.12);
+}
