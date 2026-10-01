@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useState } from 'react';
 import { useAuth } from './auth/AuthContext';
 import { Stage } from './stage/Stage';
 import { OnboardingScreen } from './screens/onboarding/OnboardingScreen';
@@ -12,9 +12,24 @@ import { AlkyneScreen } from './screens/Alkyne/AlkyneScreen';
 import { Screen67, Screen68, Screen69 } from './screens/suffixes/SuffixScreen';
 import { ALKANE_PROGRESSION, nextAlkane } from './game/engine/config.ts';
 import { useLessonVoice, useWalkthroughVoice } from './game/voice/useLessonVoice.ts';
-import { GameplayFlow } from './screens/gameplay/GameplayFlow';
 import { GAMEPLAY_STEPS } from './screens/gameplay/flow/steps';
-import { LiveGameplay } from './screens/gameplay/live/LiveGameplay';
+
+/**
+ * The two gameplay routes are split out of the opening bundle.
+ *
+ * Between them they pull in the engine, the physics and the 31 transcribed
+ * scenes - none of which the sign-in screen can use, and all of which a
+ * student used to download before they could press a button. The chunk is
+ * fetched again as soon as they are past sign-in (below), so it is in memory
+ * long before the walkthrough opens. `import()` caches, so the warm-up and
+ * the lazy render are one request, not two.
+ */
+const GameplayFlow = lazy(() =>
+  import('./screens/gameplay/GameplayFlow').then((m) => ({ default: m.GameplayFlow })),
+);
+const LiveGameplay = lazy(() =>
+  import('./screens/gameplay/live/LiveGameplay').then((m) => ({ default: m.LiveGameplay })),
+);
 
 /**
  * Screen order so far: the onboarding flow (Figma H1 -> H2 -> H3), the
@@ -185,6 +200,19 @@ export default function App() {
     if (status === 'signed_in' && screen === 'signIn') advance();
   }, [status, screen, advance]);
 
+  /**
+   * Warm the gameplay chunk once the student is past sign-in.
+   *
+   * They have six lesson screens to read before the walkthrough opens, which
+   * is far longer than the chunk takes to arrive, so the split costs them no
+   * waiting. Nothing is rendered or constructed here - only fetched.
+   */
+  useEffect(() => {
+    if (screen === 'signIn') return;
+    void import('./screens/gameplay/GameplayFlow');
+    void import('./screens/gameplay/live/LiveGameplay');
+  }, [screen]);
+
   const handlePrefixEvent = (event: PrefixEvent) => {
     // Placeholder for the voice layer; no audio service is wired up yet.
     if (import.meta.env.DEV) console.debug('[prefix]', event);
@@ -195,18 +223,25 @@ export default function App() {
   //
   // The walkthrough is the Figma flow played as a demonstration; its last
   // frame now leads into the game rather than stopping there.
-  if (screen === 'gameplay') return <GameplayFlow onContinue={advance} onStepChange={onWalkthroughStep} />;
+  if (screen === 'gameplay')
+    return (
+      <Suspense fallback={null}>
+        <GameplayFlow onContinue={advance} onStepChange={onWalkthroughStep} />
+      </Suspense>
+    );
   // The game itself: ?molecule=methane|ethane|propane chooses the challenge.
   if (screen === 'play') {
     return (
-      <LiveGameplay
-        molecule={molecule}
-        // Finishing one molecule moves the round on to the next; the prefix
-        // rail already lights the chip for whichever is being built.
-        nextMolecule={nextAlkane(molecule)}
-        onAdvance={setMolecule}
-        onExit={() => goTo('gameplay')}
-      />
+      <Suspense fallback={null}>
+        <LiveGameplay
+          molecule={molecule}
+          // Finishing one molecule moves the round on to the next; the prefix
+          // rail already lights the chip for whichever is being built.
+          nextMolecule={nextAlkane(molecule)}
+          onAdvance={setMolecule}
+          onExit={() => goTo('gameplay')}
+        />
+      </Suspense>
     );
   }
 

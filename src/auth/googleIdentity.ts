@@ -65,19 +65,40 @@ export function loadGoogleIdentity(timeoutMs = SCRIPT_TIMEOUT_MS): Promise<Googl
   if (present) return Promise.resolve(present);
 
   return new Promise((resolve) => {
-    const started = Date.now();
-    const poll = window.setInterval(() => {
+    const tag = document.querySelector<HTMLScriptElement>('script[src*="gsi/client"]');
+    let poll = 0;
+    let cap = 0;
+    let settled = false;
+
+    const finish = (api: GoogleAccountsId | null) => {
+      if (settled) return;
+      settled = true;
+      window.clearInterval(poll);
+      window.clearTimeout(cap);
+      tag?.removeEventListener('load', onLoad);
+      tag?.removeEventListener('error', onError);
+      resolve(api);
+    };
+
+    const onLoad = () => finish(window.google?.accounts?.id ?? null);
+    const onError = () => finish(null);
+
+    // The script's own events settle this the moment it lands or fails. The
+    // card is disabled until this resolves, so waiting on a timer for news the
+    // browser already has is time the student spends on a dead button.
+    tag?.addEventListener('load', onLoad);
+    tag?.addEventListener('error', onError);
+
+    // Covers the cases the events cannot: no tag at all, or a tag that already
+    // finished before the listeners were attached.
+    poll = window.setInterval(() => {
       const api = window.google?.accounts?.id;
-      if (api) {
-        window.clearInterval(poll);
-        resolve(api);
-        return;
-      }
-      if (Date.now() - started > timeoutMs) {
-        window.clearInterval(poll);
-        resolve(null);
-      }
-    }, 100);
+      if (api) finish(api);
+    }, 50);
+
+    // Blocked outright - an extension, or no network. Giving up is what lets
+    // the card fall back instead of staying dead.
+    cap = window.setTimeout(() => finish(null), timeoutMs);
   });
 }
 
