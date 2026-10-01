@@ -198,7 +198,7 @@ test('arriving at a screen that is not the game ends the round narration', async
   assert.deepEqual(h.channel.cancels, [], 'nothing is ended on the way in');
   h.lessons.enter('gameplay');
   assert.deepEqual(h.channel.cancels, ['gameplay'], 'the round is over');
-  h.lessons.enter('carbonIntro');
+  h.lessons.enter('alkane');
   assert.deepEqual(h.channel.cancels, ['gameplay', 'gameplay'], 'and again on a lesson');
 });
 

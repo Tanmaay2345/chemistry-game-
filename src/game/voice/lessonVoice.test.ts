@@ -57,16 +57,18 @@ function harness(outcome: VoiceOutcome = 'ended') {
 }
 
 /** The lesson flow in order, as `SCREENS` has it. */
-const FLOW = ['signIn', 'carbonIntro', 'carbonValency', 'prefixIntro', 'alkane', 'alkene', 'alkyne', 'screen67', 'screen68', 'screen69'];
+const FLOW = ['signIn', 'prefixIntro', 'alkane', 'alkene', 'alkyne', 'screen67', 'screen68', 'screen69'];
 
 // ------------------------------------------------------------------ the mapping
 
-test('each lesson screen maps to its own clip, V01 to V10 in flow order', () => {
+test('each lesson screen maps to its own clip, in flow order', () => {
   assert.deepEqual(
     FLOW.map((screen) => voiceForScreen(screen)),
-    ['V01', 'V02', 'V03', 'V04', 'V05', 'V06', 'V07', 'V08', 'V09', 'V10'],
+    ['V01', 'V04', 'V05', 'V06', 'V07', 'V08', 'V09', 'V10'],
   );
-  assert.equal(Object.keys(LESSON_VOICE).length, 10, 'ten lessons, no more');
+  // V02 and V03 belonged to the two carbon frames (Figma H2, H3), which are no
+  // longer in the flow. The clips remain; nothing asks for them.
+  assert.equal(Object.keys(LESSON_VOICE).length, 8, 'eight lessons, no more');
   for (const id of Object.values(LESSON_VOICE)) {
     assert.equal(VOICE_CLIPS[id].category, 'lesson');
     // Lesson lines queue: they never cut each other off.
@@ -92,25 +94,25 @@ test('V01 plays exactly once on entering the first screen', async () => {
 
 test('a rerender does not replay the line', async () => {
   const { channel, lessons } = harness();
-  lessons.enter('carbonIntro');
+  lessons.enter('alkane');
   await channel.settle();
   // React re-runs an effect whenever it likes; the screen has not changed.
-  lessons.enter('carbonIntro');
-  lessons.enter('carbonIntro');
-  lessons.enter('carbonIntro');
+  lessons.enter('alkane');
+  lessons.enter('alkane');
+  lessons.enter('alkane');
   await channel.settle();
-  assert.deepEqual(channel.played, ['V02']);
+  assert.deepEqual(channel.played, ['V05']);
 });
 
 test('React development double-invoke does not duplicate the line', async () => {
   const { channel, lessons } = harness();
   // Two synchronous calls, before anything has resolved: this is the effect
   // being invoked, cleaned up and invoked again.
-  lessons.enter('carbonValency');
-  lessons.enter('carbonValency');
-  assert.deepEqual(channel.played, ['V03'], 'asked for once, although entered twice');
+  lessons.enter('alkene');
+  lessons.enter('alkene');
+  assert.deepEqual(channel.played, ['V06'], 'asked for once, although entered twice');
   await channel.settle();
-  assert.deepEqual(channel.played, ['V03']);
+  assert.deepEqual(channel.played, ['V06']);
 });
 
 test('a fresh controller over the same session does not repeat a line', async () => {
@@ -129,44 +131,44 @@ test('a fresh controller over the same session does not repeat a line', async ()
 
 // --------------------------------------------------------------- moving about
 
-test('walking the whole lesson flow says all ten lines, in order, once each', async () => {
+test('walking the whole lesson flow says every line, in order, once each', async () => {
   const { channel, lessons } = harness();
   for (const screen of FLOW) {
     lessons.enter(screen);
     await channel.settle();
   }
-  assert.deepEqual(channel.played, ['V01', 'V02', 'V03', 'V04', 'V05', 'V06', 'V07', 'V08', 'V09', 'V10']);
+  assert.deepEqual(channel.played, ['V01', 'V04', 'V05', 'V06', 'V07', 'V08', 'V09', 'V10']);
 });
 
-test('V02 to V03 changes the line, and stops the one before it', async () => {
+test('V05 to V06 changes the line, and stops the one before it', async () => {
   const { channel, lessons } = harness();
-  lessons.enter('carbonIntro');
+  lessons.enter('alkane');
   await channel.settle();
   const stopsBefore = channel.stops;
-  lessons.enter('carbonValency');
-  assert.deepEqual(channel.played, ['V02', 'V03']);
+  lessons.enter('alkene');
+  assert.deepEqual(channel.played, ['V05', 'V06']);
   assert.equal(channel.stops, stopsBefore + 1, 'the previous line was stopped, not left talking');
 });
 
 test('Back and forward do not repeat a line the student has heard', async () => {
   const { channel, lessons } = harness();
-  lessons.enter('carbonIntro');
+  lessons.enter('alkane');
   await channel.settle();
-  lessons.enter('carbonValency');
+  lessons.enter('alkene');
   await channel.settle();
-  lessons.enter('carbonIntro'); // Back
+  lessons.enter('alkane'); // Back
   await channel.settle();
-  lessons.enter('carbonValency'); // Forward
+  lessons.enter('alkene'); // Forward
   await channel.settle();
-  assert.deepEqual(channel.played, ['V02', 'V03'], 'each line was said once, on first arrival');
+  assert.deepEqual(channel.played, ['V05', 'V06'], 'each line was said once, on first arrival');
 });
 
 test('a refresh straight onto a lesson says that lesson line', async () => {
   // A reload is a new page: a new session, entering mid-flow from the URL.
   const { channel, lessons } = harness();
-  lessons.enter('carbonValency');
+  lessons.enter('alkene');
   await channel.settle();
-  assert.deepEqual(channel.played, ['V03'], 'not V01 - the screen the URL asked for');
+  assert.deepEqual(channel.played, ['V06'], 'not V01 - the screen the URL asked for');
 });
 
 test('leaving the lessons for the walkthrough lets the lesson line run until the walkthrough speaks', async () => {
@@ -193,22 +195,22 @@ test('a refused autoplay leaves the lesson exactly as it was', async () => {
   // untouched either way: no state here can stop the card being pressed.
   assert.equal(session.spokenThisSession().has('V01'), false);
   // And the student moves on normally.
-  lessons.enter('carbonIntro');
+  lessons.enter('alkane');
   await channel.settle('ended');
-  assert.deepEqual(channel.played, ['V01', 'V02']);
+  assert.deepEqual(channel.played, ['V01', 'V05']);
 });
 
 test('a line the browser refused is still owed, so coming back plays it', async () => {
   const { channel, lessons } = harness();
   lessons.enter('signIn');
   await channel.settle('failed');
-  lessons.enter('carbonIntro');
+  lessons.enter('alkane');
   await channel.settle('ended');
   // By now the student has clicked, so the page has the gesture the browser
   // was waiting for.
   lessons.enter('signIn');
   await channel.settle('ended');
-  assert.deepEqual(channel.played, ['V01', 'V02', 'V01']);
+  assert.deepEqual(channel.played, ['V01', 'V05', 'V01']);
 });
 
 test('a playback error does not stop the flow either', async () => {
@@ -229,11 +231,11 @@ test('a line that was cut off counts as heard', async () => {
 
 test('a muted channel drops the line and the flow is unaffected', async () => {
   const { channel, session, lessons } = harness('dropped');
-  lessons.enter('carbonIntro');
+  lessons.enter('alkane');
   await channel.settle('dropped');
-  assert.deepEqual(channel.played, ['V02'], 'asked for');
-  assert.equal(session.spokenThisSession().has('V02'), false, 'never spoken, so still owed if unmuted');
-  lessons.enter('carbonValency');
+  assert.deepEqual(channel.played, ['V05'], 'asked for');
+  assert.equal(session.spokenThisSession().has('V05'), false, 'never spoken, so still owed if unmuted');
+  lessons.enter('alkene');
   await channel.settle('dropped');
-  assert.deepEqual(channel.played, ['V02', 'V03']);
+  assert.deepEqual(channel.played, ['V05', 'V06']);
 });

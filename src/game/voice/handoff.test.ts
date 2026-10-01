@@ -219,7 +219,7 @@ test('going back to a lesson ends the round narration rather than talking over i
   a.startRound('methane');
   await Promise.resolve();
   assert.equal(a.voice.currentOwner(), 'gameplay');
-  a.lessons.enter('carbonIntro');
+  a.lessons.enter('alkane');
   await Promise.resolve();
   assert.equal(a.states.includes('M01:cancelled'), true, 'the round stops when a lesson is reached');
 });

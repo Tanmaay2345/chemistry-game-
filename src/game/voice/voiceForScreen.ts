@@ -7,14 +7,16 @@ import type { VoiceId } from './voiceClips.ts';
  * the ones in section A of `docs/voice/sarvam-voice-script.md`. Kept as data so
  * the mapping can be asserted without React.
  *
+ * The two carbon onboarding frames (Figma H2 and H3) were taken out of the
+ * flow, so their lines - V02 and V03 - have no screen to play on. The clips
+ * stay in `voiceClips.ts`; nothing asks for them.
+ *
  * The two gameplay routes are absent on purpose. `gameplay` (the walkthrough)
  * is V11/V12 and `play` is the live game - neither is wired yet, and a screen
  * with no entry here is simply silent.
  */
 export const LESSON_VOICE: Record<string, VoiceId> = {
   signIn: 'V01',
-  carbonIntro: 'V02',
-  carbonValency: 'V03',
   prefixIntro: 'V04',
   alkane: 'V05',
   alkene: 'V06',
