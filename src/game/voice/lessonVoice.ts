@@ -1,6 +1,6 @@
 import type { VoiceId } from './voiceClips.ts';
 import type { VoiceOutcome, VoiceOwner } from './VoiceManager.ts';
-import { voiceForScreen, voiceForWalkthroughStep } from './voiceForScreen.ts';
+import { voiceForPrefix, voiceForScreen, voiceForWalkthroughStep } from './voiceForScreen.ts';
 import type { VoiceSession } from './voiceSession.ts';
 
 /**
@@ -31,7 +31,21 @@ export type VoiceChannel = {
  * screen other than the live game. The walkthrough's own frames do not, because
  * they happen inside a screen whose arrival already said so.
  */
-type Cue = { key: string; screen: string; id: VoiceId | null; endsRound: boolean };
+type Cue = {
+  key: string;
+  screen: string;
+  id: VoiceId | null;
+  endsRound: boolean;
+  /**
+   * Whether this line replaces whatever the lesson layer is saying.
+   *
+   * True for a change of screen: the previous screen's line is about a screen
+   * the learner has left. False within one screen, where a sequence of lines
+   * describes one animation and cutting each off mid-word is the opposite of
+   * what it is for - they queue instead.
+   */
+  interrupts: boolean;
+};
 
 export class LessonVoice {
   private readonly voice: VoiceChannel;
@@ -57,7 +71,7 @@ export class LessonVoice {
    * no line of its own yet.
    */
   enter(screen: string): void {
-    this.say({ key: `screen:${screen}`, screen, id: voiceForScreen(screen), endsRound: screen !== 'play' });
+    this.say({ key: `screen:${screen}`, screen, id: voiceForScreen(screen), endsRound: screen !== 'play', interrupts: true });
   }
 
   /**
@@ -67,7 +81,25 @@ export class LessonVoice {
    * ones that advance themselves on a timer.
    */
   enterStep(index: number, stepCount: number): void {
-    this.say({ key: `step:${index}`, screen: 'gameplay', id: voiceForWalkthroughStep(index, stepCount), endsRound: false });
+    this.say({ key: `step:${index}`, screen: 'gameplay', id: voiceForWalkthroughStep(index, stepCount), endsRound: false, interrupts: true });
+  }
+
+  /**
+   * The prefix rail has reached one of its chips, or come to rest.
+   *
+   * The rail moves on its own timer and this only reports where it is; it
+   * cannot move it, hold it, or change its timing. Lines queue rather than
+   * interrupt, so a line longer than the chip it belongs to finishes and the
+   * next waits - which is also why the later chips say nothing.
+   */
+  enterPrefix(index: number, completed: boolean): void {
+    this.say({
+      key: completed ? 'prefix:end' : `prefix:${index}`,
+      screen: 'prefixIntro',
+      id: voiceForPrefix(index, completed),
+      endsRound: false,
+      interrupts: false,
+    });
   }
 
   /**
@@ -104,8 +136,9 @@ export class LessonVoice {
     // again - by Back, or by walking the flow twice - stays quiet.
     if (this.session.spokenThisSession().has(cue.id) || this.inFlight.has(cue.id)) return;
 
-    // Whatever this layer was saying belonged to the moment before this one.
-    this.voice.stop('lesson');
+    // Whatever this layer was saying belonged to the moment before this one -
+    // unless this line continues it, in which case it queues behind it.
+    if (cue.interrupts) this.voice.stop('lesson');
 
     const id = cue.id;
     this.inFlight.add(id);

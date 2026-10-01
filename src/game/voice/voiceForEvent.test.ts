@@ -14,13 +14,13 @@ const phase = (from: string, to: string): GameEvent => ({ type: 'PHASE_CHANGED',
 
 // ------------------------------------------------------------------- the library
 
-test('there are 41 clips, and the policies are the ones the design document sets', () => {
-  assert.equal(VOICE_IDS.length, 41);
+test('there are 46 clips, and the policies are the ones the design document sets', () => {
+  assert.equal(VOICE_IDS.length, 46);
   const byPolicy = { INTERRUPT: [] as VoiceId[], QUEUE: [] as VoiceId[], DROP: [] as VoiceId[] };
   for (const id of VOICE_IDS) byPolicy[VOICE_CLIPS[id].policy].push(id);
   assert.deepEqual(byPolicy.INTERRUPT.sort(), ['E05', 'M05', 'P05', 'T01', 'T02']);
   assert.deepEqual(byPolicy.DROP.sort(), ['S02', 'S03', 'S05', 'S06', 'S07', 'S08', 'S09']);
-  assert.equal(byPolicy.QUEUE.length, 29);
+  assert.equal(byPolicy.QUEUE.length, 34);
 });
 
 // --------------------------------------------------------------- the right molecule

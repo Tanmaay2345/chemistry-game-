@@ -116,8 +116,11 @@ function playThrough(engine: GameEngine): void {
 // ------------------------------------------------------- 1-2. every clip, a trigger
 
 test('every gameplay clip is reachable from a real engine event', () => {
-  // The 12 lesson and walkthrough clips are screen-driven, not engine-driven.
-  const screenDriven = new Set<VoiceId>(['V01', 'V02', 'V03', 'V04', 'V05', 'V06', 'V07', 'V08', 'V09', 'V10', 'V11', 'V12']);
+  // The lesson, rail and walkthrough clips are screen-driven, not engine-driven.
+  const screenDriven = new Set<VoiceId>([
+    'V01', 'V02', 'V03', 'V04', 'V05', 'V06', 'V07', 'V08', 'V09',
+    'V10', 'V11', 'V12', 'V13', 'V14', 'V15', 'V16', 'V17',
+  ]);
   const gameplayClips = VOICE_IDS.filter((id) => !screenDriven.has(id));
   assert.equal(gameplayClips.length, 29);
 

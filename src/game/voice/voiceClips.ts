@@ -1,5 +1,5 @@
 /**
- * The narration library: 41 clips, pre-generated and shipped as files.
+ * The narration library: 46 clips, pre-generated and shipped as files.
  *
  * Data only - no chemistry, no wording. The spoken text lives in the audio and
  * in `docs/voice/sarvam-voice-script.md`, which is what generated these files;
@@ -38,6 +38,11 @@ export type VoiceId =
   | 'V10'
   | 'V11'
   | 'V12'
+  | 'V13'
+  | 'V14'
+  | 'V15'
+  | 'V16'
+  | 'V17'
   | 'M01'
   | 'M02'
   | 'M03'
@@ -94,6 +99,11 @@ export const VOICE_CLIPS: Record<VoiceId, VoiceClip> = {
   V10: { id: 'V10', src: `${VOICE_BASE}/V10.mp3`, policy: 'QUEUE', category: 'lesson', durationMs: 7510 },
   V11: { id: 'V11', src: `${VOICE_BASE}/V11.mp3`, policy: 'QUEUE', category: 'lesson', durationMs: 4870 },
   V12: { id: 'V12', src: `${VOICE_BASE}/V12.mp3`, policy: 'QUEUE', category: 'lesson', durationMs: 3070 },
+  V13: { id: 'V13', src: `${VOICE_BASE}/V13.mp3`, policy: 'QUEUE', category: 'lesson', durationMs: 1920 },
+  V14: { id: 'V14', src: `${VOICE_BASE}/V14.mp3`, policy: 'QUEUE', category: 'lesson', durationMs: 1752 },
+  V15: { id: 'V15', src: `${VOICE_BASE}/V15.mp3`, policy: 'QUEUE', category: 'lesson', durationMs: 1560 },
+  V16: { id: 'V16', src: `${VOICE_BASE}/V16.mp3`, policy: 'QUEUE', category: 'lesson', durationMs: 6576 },
+  V17: { id: 'V17', src: `${VOICE_BASE}/V17.mp3`, policy: 'QUEUE', category: 'lesson', durationMs: 3192 },
   M01: { id: 'M01', src: `${VOICE_BASE}/M01.mp3`, policy: 'QUEUE', category: 'methane', durationMs: 5060 },
   M02: { id: 'M02', src: `${VOICE_BASE}/M02.mp3`, policy: 'QUEUE', category: 'methane', durationMs: 4300 },
   M03: { id: 'M03', src: `${VOICE_BASE}/M03.mp3`, policy: 'QUEUE', category: 'methane', durationMs: 3550 },

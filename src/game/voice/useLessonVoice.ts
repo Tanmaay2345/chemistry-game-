@@ -52,3 +52,19 @@ export function useWalkthroughVoice(stepCount: number): (step: unknown, index: n
     lessonVoice().enterStep(index, stepCount);
   }, [stepCount]);
 }
+
+/**
+ * The prefix rail's lines, as a handler for `PrefixIntroScreen.onEvent`.
+ *
+ * Stable identity for the same reason the walkthrough's is: the screen reports
+ * from an effect that depends on the handler, so a new function each render
+ * would re-announce the chip already showing.
+ *
+ * It listens and nothing else. It cannot move the rail, pause it or change its
+ * timing - the animation is exactly as it was with no narration attached.
+ */
+export function usePrefixVoice(): (index: number, completed: boolean) => void {
+  return useCallback((index: number, completed: boolean) => {
+    lessonVoice().enterPrefix(index, completed);
+  }, []);
+}

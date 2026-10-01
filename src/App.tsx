@@ -8,7 +8,7 @@ import { AlkaneScreen } from './screens/Alkane/AlkaneScreen';
 import { AlkeneScreen } from './screens/Alkene/AlkeneScreen';
 import { AlkyneScreen } from './screens/Alkyne/AlkyneScreen';
 import { ALKANE_PROGRESSION, nextAlkane } from './game/engine/config.ts';
-import { useLessonVoice, useWalkthroughVoice } from './game/voice/useLessonVoice.ts';
+import { useLessonVoice, usePrefixVoice, useWalkthroughVoice } from './game/voice/useLessonVoice.ts';
 import { GAMEPLAY_STEPS } from './screens/gameplay/flow/steps';
 import { assetsForScreen } from './screens/screenAssets.ts';
 import { preloadAssets } from './screens/assetPreloader.ts';
@@ -224,10 +224,22 @@ export default function App() {
     if (WARM_GAMEPLAY_ASSETS_FROM.has(screen)) preloadAssets(assetsForScreen('play'));
   }, [screen]);
 
-  const handlePrefixEvent = (event: PrefixEvent) => {
-    // Placeholder for the voice layer; no audio service is wired up yet.
-    if (import.meta.env.DEV) console.debug('[prefix]', event);
-  };
+  /**
+   * The rail tells the voice layer where it is.
+   *
+   * Only the two moments that have a line to them are forwarded; the screen
+   * reports more than that, and the rest stay as they were - reported and
+   * unused. `useCallback` keeps the identity stable, because the screen
+   * announces from an effect that depends on this handler.
+   */
+  const speakPrefix = usePrefixVoice();
+  const handlePrefixEvent = useCallback(
+    (event: PrefixEvent) => {
+      if (event.type === 'prefixShown') speakPrefix(event.index, false);
+      else if (event.type === 'instructionCompleted') speakPrefix(-1, true);
+    },
+    [speakPrefix],
+  );
 
   // The gameplay lays itself out against the window (responsive); every
   // other screen is still drawn on its Figma canvas by the Stage.
