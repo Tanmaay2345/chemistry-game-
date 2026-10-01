@@ -57,18 +57,19 @@ function harness(outcome: VoiceOutcome = 'ended') {
 }
 
 /** The lesson flow in order, as `SCREENS` has it. */
-const FLOW = ['signIn', 'prefixIntro', 'alkane', 'alkene', 'alkyne', 'screen67', 'screen68', 'screen69'];
+const FLOW = ['signIn', 'prefixIntro', 'alkane', 'alkene', 'alkyne'];
 
 // ------------------------------------------------------------------ the mapping
 
 test('each lesson screen maps to its own clip, in flow order', () => {
   assert.deepEqual(
     FLOW.map((screen) => voiceForScreen(screen)),
-    ['V01', 'V04', 'V05', 'V06', 'V07', 'V08', 'V09', 'V10'],
+    ['V01', 'V04', 'V05', 'V06', 'V07'],
   );
-  // V02 and V03 belonged to the two carbon frames (Figma H2, H3), which are no
-  // longer in the flow. The clips remain; nothing asks for them.
-  assert.equal(Object.keys(LESSON_VOICE).length, 8, 'eight lessons, no more');
+  // V02 and V03 belonged to the carbon frames (Figma H2, H3) and V08 to V10 to
+  // the bond-suffix frames; none of them are in the flow now. The clips remain;
+  // nothing asks for them.
+  assert.equal(Object.keys(LESSON_VOICE).length, 5, 'five lessons, no more');
   for (const id of Object.values(LESSON_VOICE)) {
     assert.equal(VOICE_CLIPS[id].category, 'lesson');
     // Lesson lines queue: they never cut each other off.
@@ -137,7 +138,7 @@ test('walking the whole lesson flow says every line, in order, once each', async
     lessons.enter(screen);
     await channel.settle();
   }
-  assert.deepEqual(channel.played, ['V01', 'V04', 'V05', 'V06', 'V07', 'V08', 'V09', 'V10']);
+  assert.deepEqual(channel.played, ['V01', 'V04', 'V05', 'V06', 'V07']);
 });
 
 test('V05 to V06 changes the line, and stops the one before it', async () => {
@@ -173,15 +174,15 @@ test('a refresh straight onto a lesson says that lesson line', async () => {
 
 test('leaving the lessons for the walkthrough lets the lesson line run until the walkthrough speaks', async () => {
   const { channel, lessons } = harness();
-  lessons.enter('screen69');
+  lessons.enter('alkyne');
   const stopsBefore = channel.stops;
   // The walkthrough screen itself has no line, so nothing is cut off here.
   lessons.enter('gameplay');
-  assert.equal(channel.stops, stopsBefore, 'V10 is not cut off by the screen change alone');
-  // Its first frame does have one, and that is what replaces V10.
+  assert.equal(channel.stops, stopsBefore, 'V07 is not cut off by the screen change alone');
+  // Its first frame does have one, and that is what replaces V07.
   lessons.enterStep(0, 31);
   assert.equal(channel.stops, stopsBefore + 1);
-  assert.deepEqual(channel.played, ['V10', 'V11']);
+  assert.deepEqual(channel.played, ['V07', 'V11']);
 });
 
 // ------------------------------------------------------------------- failing open

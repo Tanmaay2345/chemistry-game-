@@ -47,7 +47,7 @@ function harness() {
 
 /** Arriving at the walkthrough the way the flow does: screen first, then frame. */
 async function openWalkthrough(h: ReturnType<typeof harness>) {
-  h.lessons.enter('screen69');
+  h.lessons.enter('alkyne');
   await h.channel.settle();
   h.lessons.enter('gameplay');
   h.lessons.enterStep(0, STEPS);
@@ -155,27 +155,27 @@ test('reaching the last frame stops V11 if it is somehow still speaking', async 
 test('entering the walkthrough silences the lesson line but not its own line', async () => {
   const h = harness();
   await openWalkthrough(h);
-  assert.deepEqual(h.channel.played, ['V10', 'V11']);
+  assert.deepEqual(h.channel.played, ['V07', 'V11']);
 });
 
 test('the order React runs the two effects in does not matter', async () => {
   // React runs a child's effects before its parent's, so the frame is usually
   // announced before the screen. Both orders must leave V11 speaking.
   const childFirst = harness();
-  childFirst.lessons.enter('screen69');
+  childFirst.lessons.enter('alkyne');
   await childFirst.channel.settle();
   childFirst.lessons.enterStep(0, STEPS);
   childFirst.lessons.enter('gameplay');
   await childFirst.channel.settle();
-  assert.deepEqual(childFirst.channel.played, ['V10', 'V11']);
+  assert.deepEqual(childFirst.channel.played, ['V07', 'V11']);
 
   const parentFirst = harness();
-  parentFirst.lessons.enter('screen69');
+  parentFirst.lessons.enter('alkyne');
   await parentFirst.channel.settle();
   parentFirst.lessons.enter('gameplay');
   parentFirst.lessons.enterStep(0, STEPS);
   await parentFirst.channel.settle();
-  assert.deepEqual(parentFirst.channel.played, ['V10', 'V11']);
+  assert.deepEqual(parentFirst.channel.played, ['V07', 'V11']);
 });
 
 test('leaving the walkthrough for the live game lets V12 finish', async () => {
@@ -251,7 +251,7 @@ test('leaving the walkthrough and returning does not replay its lines', async ()
   h.lessons.enter('gameplay');
   h.lessons.enterStep(0, STEPS);
   await h.channel.settle();
-  assert.deepEqual(h.channel.played, ['V10', 'V11']);
+  assert.deepEqual(h.channel.played, ['V07', 'V11']);
 });
 
 // ------------------------------------------------------------------- failing open

@@ -7,12 +7,17 @@ import type { PrefixEvent } from './screens/prefixes/events';
 import { AlkaneScreen } from './screens/Alkane/AlkaneScreen';
 import { AlkeneScreen } from './screens/Alkene/AlkeneScreen';
 import { AlkyneScreen } from './screens/Alkyne/AlkyneScreen';
-import { Screen67, Screen68, Screen69 } from './screens/suffixes/SuffixScreen';
 import { ALKANE_PROGRESSION, nextAlkane } from './game/engine/config.ts';
 import { useLessonVoice, useWalkthroughVoice } from './game/voice/useLessonVoice.ts';
 import { GAMEPLAY_STEPS } from './screens/gameplay/flow/steps';
 import { assetsForScreen } from './screens/screenAssets.ts';
 import { preloadAssets } from './screens/assetPreloader.ts';
+import {
+  WARM_GAMEPLAY_ASSETS_FROM,
+  nextScreen,
+  screenFromScrap,
+  type Screen,
+} from './screens/flow.ts';
 
 /**
  * The two gameplay routes are split out of the opening bundle.
@@ -34,50 +39,12 @@ const LiveGameplay = lazy(() =>
 /**
  * Screen order so far: sign-in (Figma H1), the carbon-chain prefix rail
  * (Figma 915), then the three bond screens
- * (A1 alkane -> A2 alkene -> A3 alkyne), then the bond suffixes
- * (Desktop 67 Ane -> 68 Ene -> 69 Yne).
+ * (A1 alkane -> A2 alkene -> A3 alkyne), and then the game.
  *
  * Sign-in is the seam where real authentication will attach later. Prefix
  * events are forwarded to a handler that a voice layer will replace; nothing
  * here knows any chemistry.
  */
-
-const SCREENS = ['signIn', 'prefixIntro', 'alkane', 'alkene', 'alkyne', 'screen67', 'screen68', 'screen69', 'gameplay', 'play'] as const;
-type Screen = (typeof SCREENS)[number];
-
-/**
- * Screens the lesson path does not visit.
- *
- * The 31 transcribed frames on the `gameplay` route are a reference flow - a
- * drawing of the game that checks no chemistry and advances itself on timers.
- * The lesson now ends in the game itself, so the walkthrough is skipped on the
- * way forward. It stays in `SCREENS` because `?step=gameplay` is still how the
- * frames are opened to look at.
- */
-const NOT_IN_LESSON_PATH: ReadonlySet<string> = new Set(['gameplay']);
-
-/** The screen a Continue press leads to, skipping anything off the path. */
-function nextScreen(current: Screen): Screen | undefined {
-  let i = SCREENS.indexOf(current) + 1;
-  while (i < SCREENS.length && NOT_IN_LESSON_PATH.has(SCREENS[i])) i += 1;
-  return SCREENS[i];
-}
-
-/**
- * Where the gameplay's own images start being fetched.
- *
- * They are the largest batch in the game and the one a student would otherwise
- * wait on at the worst moment - the frame the lesson has been building to. The
- * last bond lesson is far enough ahead to have them ready and late enough that
- * a student who never gets there never pays for them.
- */
-const WARM_GAMEPLAY_ASSETS_FROM: ReadonlySet<string> = new Set([
-  'alkyne',
-  'screen67',
-  'screen68',
-  'screen69',
-  'gameplay',
-]);
 
 /**
  * The screen is the URL.
@@ -91,8 +58,7 @@ const WARM_GAMEPLAY_ASSETS_FROM: ReadonlySet<string> = new Set([
  * `?scene=` and `?molecule=` still open one state or one challenge.
  */
 function screenFromUrl(): Screen {
-  const requested = new URLSearchParams(window.location.search).get('step');
-  return SCREENS.find((screen) => screen === requested) ?? 'signIn';
+  return screenFromScrap(new URLSearchParams(window.location.search).get('step'));
 }
 
 /** The same URL with `step` set - every other parameter is kept. */
@@ -134,9 +100,6 @@ const CANVAS: Record<Screen, { width: number; height: number; content: { top: nu
   alkane: { width: 1440, height: 1024, content: { top: 116, bottom: 876 } },
   alkene: { width: 1440, height: 1024, content: { top: 116, bottom: 876 } },
   alkyne: { width: 1440, height: 1024, content: { top: 116, bottom: 876 } },
-  screen67: { width: 1440, height: 1024, content: { top: 116, bottom: 876 } },
-  screen68: { width: 1440, height: 1024, content: { top: 116, bottom: 876 } },
-  screen69: { width: 1440, height: 1024, content: { top: 116, bottom: 876 } },
   // Both gameplay routes lay themselves out; these entries are never used.
   gameplay: { width: 1440, height: 1024, content: { top: 116, bottom: 921 } },
   play: { width: 1440, height: 1024, content: { top: 116, bottom: 921 } },
@@ -309,9 +272,6 @@ export default function App() {
       {screen === 'alkane' && <AlkaneScreen onContinue={advance} />}
       {screen === 'alkene' && <AlkeneScreen onContinue={advance} />}
       {screen === 'alkyne' && <AlkyneScreen onContinue={advance} />}
-      {screen === 'screen67' && <Screen67 onContinue={advance} />}
-      {screen === 'screen68' && <Screen68 onContinue={advance} />}
-      {screen === 'screen69' && <Screen69 onContinue={advance} />}
     </Stage>
   );
 }

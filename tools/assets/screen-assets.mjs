@@ -31,9 +31,6 @@ const ENTRIES = {
   alkane: 'src/screens/Alkane/AlkaneScreen.tsx',
   alkene: 'src/screens/Alkene/AlkeneScreen.tsx',
   alkyne: 'src/screens/Alkyne/AlkyneScreen.tsx',
-  screen67: 'src/screens/suffixes/SuffixScreen.tsx',
-  screen68: 'src/screens/suffixes/SuffixScreen.tsx',
-  screen69: 'src/screens/suffixes/SuffixScreen.tsx',
   gameplay: 'src/screens/gameplay/GameplayFlow.tsx',
   play: 'src/screens/gameplay/live/LiveGameplay.tsx',
 };
