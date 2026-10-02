@@ -1,5 +1,6 @@
 import type { Family } from '../chemistry/elements.ts';
 import { parseName, type MoleculeSpec } from '../chemistry/formula.ts';
+import { carbonGroupsFor, hydrogenRowFor } from './atomPools.ts';
 import {
   addBond,
   canBond,
@@ -193,8 +194,9 @@ export class GameEngine {
   }
 
   private setupPools(): void {
-    const sizes = this.challenge.carbonGroups.map((g) => g.length);
-    this.carbonGroups = this.challenge.carbonGroups.map((group, groupIndex) => {
+    const groups = carbonGroupsFor(this.challenge, this.spec);
+    const sizes = groups.map((g) => g.length);
+    this.carbonGroups = groups.map((group, groupIndex) => {
       const atomIds = group.map((family, i) => {
         const atom = createAtom(this.id('c'), 'C', family, carbonGroupPosition(sizes, groupIndex, i), CARBON_RADIUS);
         this.molecule.atoms.push(atom);
@@ -204,8 +206,9 @@ export class GameEngine {
       return { index: groupIndex, family: group[0], atomIds, chosen: false };
     });
 
-    this.hydrogenRowIds = this.challenge.hydrogenRow.map((family, i) => {
-      const atom = createAtom(this.id('h'), 'H', family, hydrogenRowPosition(i, this.challenge.hydrogenRow.length), HYDROGEN_RADIUS);
+    const row = hydrogenRowFor(this.challenge, this.spec);
+    this.hydrogenRowIds = row.map((family, i) => {
+      const atom = createAtom(this.id('h'), 'H', family, hydrogenRowPosition(i, row.length), HYDROGEN_RADIUS);
       this.molecule.atoms.push(atom);
       return atom.id;
     });

@@ -14,10 +14,15 @@ export type Challenge = {
   /** Molecule name, read by the chemistry layer - not a switch in the engine. */
   molecule: string;
   timeLimitSeconds: number;
-  /** The carbon groups offered. The player must pick the right size and colour. */
-  carbonGroups: Family[][];
-  /** The mixed hydrogen row the player picks a family from. */
-  hydrogenRow: Family[];
+  /**
+   * The carbon groups offered. The player must pick the right size and colour.
+   *
+   * Optional: a molecule Figma drew carries the row it was drawn with, and a
+   * molecule it did not has one built from its chemistry. See `atomPools`.
+   */
+  carbonGroups?: Family[][];
+  /** The mixed hydrogen row the player picks a family from. Optional, as above. */
+  hydrogenRow?: Family[];
 };
 
 export type ScoreEvent =
@@ -275,10 +280,11 @@ export const ALKANE_CHALLENGES: Record<string, Challenge> = {
     carbonGroups: [['blue', 'red'], ['blue', 'green', 'green'], ['blue', 'blue'], ['blue', 'blue', 'blue']],
     hydrogenRow: ['blue', 'blue', 'red', 'blue', 'red', 'blue', 'red', 'blue', 'blue', 'green', 'blue', 'blue', 'blue'],
   },
+  // No Figma row was drawn for propane, so its pool comes from its chemistry:
+  // three blue carbons and eight hydrogens to find. Any molecule added after
+  // this one needs nothing here but its name and a time limit.
   propane: {
     molecule: 'propane',
     timeLimitSeconds: EASY_TIME_LIMIT_SECONDS,
-    carbonGroups: [['blue', 'red'], ['blue', 'blue'], ['blue', 'blue', 'blue'], ['red', 'red', 'red']],
-    hydrogenRow: ['blue', 'red', 'blue', 'blue', 'green', 'blue', 'blue', 'red', 'blue', 'blue', 'green', 'blue', 'blue'],
   },
 };
