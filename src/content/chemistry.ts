@@ -181,26 +181,6 @@ export function prefixName(carbonCount: number): string {
 
 // -------------------------------------------------------- hydrogen counting
 
-export type WorkedStep = { label: string; value: string };
-
-/**
- * The hydrogen count, shown as the sum the player is meant to learn, not as
- * an answer that appears from nowhere. `H = 4n - 2 * (sum of chain bond
- * orders)`, which is the same rule `hydrogenCountFor` applies in the
- * chemistry layer - stated here in words rather than recomputed.
- */
-export function hydrogenWorking(carbonCount: number, chainBonds: number[], hydrogenCount: number): WorkedStep[] {
-  const slots = 4 * carbonCount;
-  const shared = chainBonds.reduce((sum, order) => sum + order, 0);
-  return [
-    { label: `${carbonCount} carbon${carbonCount === 1 ? '' : 's'}, 4 bonds each`, value: `4 × ${carbonCount} = ${slots}` },
-    // "shared pairs", not "bonds": a double bond is two shared pairs and a
-    // triple three, so counting bonds would under-count on anything but an
-    // alkane.
-    { label: 'each shared pair uses two of them', value: `2 × ${shared} = ${2 * shared}` },
-    { label: 'what is left is for hydrogen', value: `${slots} − ${2 * shared} = ${hydrogenCount}` },
-  ];
-}
 
 // -------------------------------------------------------------- what to say
 

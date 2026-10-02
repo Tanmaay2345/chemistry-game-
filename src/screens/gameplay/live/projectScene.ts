@@ -17,7 +17,6 @@ import {
   HYDROGEN_COLOUR_NOTE,
   SERIES_COPY,
   explainMistake,
-  hydrogenWorking,
   timeWarningCopy,
 } from '../../../content/chemistry.ts';
 import type { CarbonColor, HydrogenColor, Scene, SceneElement } from '../scene/types';
@@ -418,37 +417,6 @@ export function projectScene(snapshot: Snapshot, nextMolecule: string | null = n
       rotate: flying ? paper.angle : aiming ? aimAngle : 0,
       opacity: paper.opacity < 1 ? paper.opacity : undefined,
       inset: '-1.83% -0.25% -1.87% -1.14%',
-    });
-  }
-
-  // The hydrogen count, shown as the sum rather than as an answer. This beat
-  // is held on screen for a couple of seconds; before it was, the working was
-  // computed and thrown away in the same frame.
-  if (snapshot.phase === 'HYDROGEN_CALCULATION') {
-    hydrogenWorking(snapshot.spec.carbonCount, snapshot.spec.chainBonds, snapshot.spec.hydrogenCount).forEach((step, i) => {
-      elements.push({
-        kind: 'text',
-        key: `working-${i}-label`,
-        left: 592,
-        centerX: true,
-        // Under the prefix rail, which ends at 251.
-        top: 264 + i * 46,
-        text: step.label,
-        fontSize: 18,
-        fontWeight: 500,
-        color: '#6d6d6d',
-      });
-      elements.push({
-        kind: 'text',
-        key: `working-${i}-value`,
-        left: 592,
-        centerX: true,
-        top: 288 + i * 46,
-        text: step.value,
-        fontSize: 22,
-        fontWeight: 600,
-        color: i === 2 ? '#0795ff' : '#000000',
-      });
     });
   }
 

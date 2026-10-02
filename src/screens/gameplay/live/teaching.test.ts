@@ -10,9 +10,9 @@ import { projectScene } from './projectScene.ts';
  * What the player actually sees at each teaching beat.
  *
  * The playtest found four phases that never drew a frame: the game entered
- * and left them inside one tick, so the hydrogen count arrived as a number
- * with no working behind it. These assert both halves - that the beat is on
- * screen, and that the screen has the lesson on it.
+ * and left them inside one tick. These assert that each beat is actually on
+ * screen for long enough to read, and that the card on it says the right
+ * thing about the molecule being built.
  */
 
 const step = DEFAULT_RULES.physics.stepMs;
@@ -30,21 +30,28 @@ function scenesIn(molecule: string, phase: string, group = 2) {
   return scenes;
 }
 
-test('the hydrogen count is shown as a sum, not as an answer', () => {
+test('the hydrogen beat is held on screen, and holds no arithmetic', () => {
   const scenes = scenesIn('ethane', 'HYDROGEN_CALCULATION');
+  // The beat still has to last: the phase entering and leaving inside one tick
+  // is the regression this file was written for.
   assert.ok(scenes.length > 60, `the beat is on screen for ${(scenes.length / 60).toFixed(1)}s`);
+
+  // The working the player used to be shown was taken out on purpose. The
+  // engine still does the sum; the screen no longer spells it out.
   const text = scenes[0].elements.filter((el) => el.kind === 'text').map((el) => el.text);
-  assert.ok(text.includes('4 × 2 = 8'), `four bonds per carbon: ${JSON.stringify(text)}`);
-  assert.ok(text.includes('2 × 1 = 2'), 'the carbon-carbon bond uses two of them');
-  assert.ok(text.includes('8 − 2 = 6'), 'and six are left for hydrogen');
+  const sums = text.filter((line) => /\d\s*[×−-]\s*\d/.test(line ?? ''));
+  assert.deepEqual(sums, [], `no arithmetic on screen: ${JSON.stringify(text)}`);
 });
 
-test('propane shows its own working, from the same rule', () => {
-  const scenes = scenesIn('propane', 'HYDROGEN_CALCULATION');
-  const text = scenes[0].elements.filter((el) => el.kind === 'text').map((el) => el.text);
-  assert.ok(text.includes('4 × 3 = 12'));
-  assert.ok(text.includes('2 × 2 = 4'));
-  assert.ok(text.includes('12 − 4 = 8'));
+test('no molecule puts its working on screen', () => {
+  for (const molecule of ['methane', 'ethane', 'propane']) {
+    const scenes = scenesIn(molecule, 'HYDROGEN_CALCULATION', molecule === 'methane' ? 0 : 2);
+    for (const scene of scenes) {
+      const text = scene.elements.filter((el) => el.kind === 'text').map((el) => el.text ?? '');
+      const sums = text.filter((line) => /\d\s*[×−-]\s*\d/.test(line));
+      assert.deepEqual(sums, [], `${molecule} drew ${JSON.stringify(sums)}`);
+    }
+  }
 });
 
 test('the built chain is shown and named before the hydrogens start', () => {
