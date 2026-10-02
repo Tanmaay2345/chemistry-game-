@@ -13,7 +13,6 @@ import {
 import { METH_RAIL, standardRules } from '../data/common.ts';
 import {
   FAMILY_GLYPH,
-  FAMILY_SET_LABEL,
   HYDROGEN_COLOUR_NOTE,
   SERIES_COPY,
   explainMistake,
@@ -194,9 +193,13 @@ function nearestTarget(snapshot: Snapshot) {
  *
  * The three families are drawn in three colours and nothing else, and two of
  * them - #0795ff and #69a13b - have the same relative luminance, so to anyone
- * who cannot separate those hues the sets are identical. The bond the family
- * stands for is written above each atom in the pool as one, two or three
- * strokes, which is the notation the bond itself is drawn in.
+ * who cannot separate those hues the carbon sets would otherwise be identical.
+ * The bond the family stands for is written above each carbon as one, two or
+ * three strokes, which is the notation the bond itself is drawn in.
+ *
+ * The hydrogen row has no such badge: naming its set told the player the
+ * answer. The set is still said in each hydrogen's accessible name, which is
+ * read rather than seen.
  */
 function familyGlyph(atom: Atom, key: string): SceneElement {
   return {
@@ -204,14 +207,12 @@ function familyGlyph(atom: Atom, key: string): SceneElement {
     key,
     left: atom.position.x,
     centerX: true,
-    top: atom.position.y - (atom.element === 'C' ? 48 : 62),
-    // A carbon shows the bond its colour stands for; a hydrogen shows the set
-    // it belongs to, because a hydrogen never makes anything but a single bond.
-    text:
-      atom.element === 'C'
-        ? FAMILY_GLYPH[atom.family as 'blue' | 'red' | 'green']
-        : FAMILY_SET_LABEL[atom.family as 'blue' | 'red' | 'green'],
-    fontSize: atom.element === 'C' ? 17 : 12,
+    top: atom.position.y - 48,
+    // The bond the colour stands for, in the notation the bond itself is drawn
+    // in. Carbons only: the hydrogen row carries no badge, so which set a
+    // hydrogen belongs to is something the player has to read from its colour.
+    text: FAMILY_GLYPH[atom.family as 'blue' | 'red' | 'green'],
+    fontSize: 17,
     fontWeight: 700,
     color: '#4a4a4a',
   };
@@ -274,7 +275,6 @@ export function projectScene(snapshot: Snapshot, nextMolecule: string | null = n
       const atom = atomsById.get(id)!;
       if (atom.state !== 'free') continue;
       elements.push(hydrogenAt(atom, id));
-      elements.push(familyGlyph(atom, `${id}-glyph`));
     }
   }
 

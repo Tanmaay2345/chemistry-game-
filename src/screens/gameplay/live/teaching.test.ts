@@ -124,7 +124,7 @@ test('nothing claims a hydrogen makes a double or triple bond', () => {
   // one valency, so nothing may say a red hydrogen forms a double bond.
   assert.equal(describeFamily('red', 'H'), 'red - from the alkene set');
   assert.equal(describeFamily('red'), 'red (alkene, double bond)', 'a carbon still says the bond');
-  assert.equal(FAMILY_SET_LABEL.red, 'ene', 'the badge on a hydrogen names the set, not the bond');
+  assert.equal(FAMILY_SET_LABEL.red, 'ene', 'where the set is named, it names the set and not the bond');
 
   const engine = new GameEngine(ALKANE_CHALLENGES.ethane);
   engine.start();
@@ -138,7 +138,10 @@ test('nothing claims a hydrogen makes a double or triple bond', () => {
   assert.equal(/red hydrogen.*double bond/.test(note), false);
 });
 
-test('the hydrogen badges are the set names, the carbon badges are the bonds', () => {
+test('the carbon badges are the bonds, and the hydrogen row has no badges', () => {
+  // The strokes stay on the carbons: they are the one cue that does not depend
+  // on telling #0795ff and #69a13b apart. The hydrogens lost theirs, because
+  // naming a hydrogen's set answered the question its phase asks.
   const engine = new GameEngine(ALKANE_CHALLENGES.ethane);
   engine.start();
   const pool = projectScene(engine.snapshot()).elements.filter((el) => el.key?.endsWith('-glyph'));
@@ -148,5 +151,28 @@ test('the hydrogen badges are the set names, the carbon badges are the bonds', (
   engine.selectCarbonGroup(2);
   for (let i = 0; i < 2000 && engine.getPhase() !== 'HYDROGEN_SELECTION'; i++) engine.tick(step);
   const row = projectScene(engine.snapshot()).elements.filter((el) => el.key?.endsWith('-glyph'));
-  assert.deepEqual([...new Set(row.map((el) => (el.kind === 'text' ? el.text : '')))].sort(), ['ane', 'ene', 'yne']);
+  assert.deepEqual(row, [], 'no glyph is drawn over a hydrogen');
+});
+
+test('the hydrogen row names no sets - the player reads the colours', () => {
+  // Writing "ane" over a blue hydrogen answered the question the phase asks.
+  // The colours stay; the captions do not.
+  const labels = Object.values(FAMILY_SET_LABEL);
+  for (const [molecule, group] of [['methane', 0], ['ethane', 2], ['propane', 2]] as const) {
+    const engine = new GameEngine(ALKANE_CHALLENGES[molecule]);
+    engine.start();
+    engine.selectCarbonGroup(group);
+    for (let i = 0; i < 3000 && engine.getPhase() !== 'HYDROGEN_SELECTION'; i++) engine.tick(step);
+    assert.equal(engine.getPhase(), 'HYDROGEN_SELECTION', `${molecule} reaches the hydrogen phase`);
+
+    const scene = projectScene(engine.snapshot());
+    const drawn = scene.elements.filter((el) => el.kind === 'text').map((el) => el.text ?? '');
+    const named = drawn.filter((t) => labels.includes(t as (typeof labels)[number]));
+    assert.deepEqual(named, [], `${molecule} still captions its hydrogens: ${JSON.stringify(drawn)}`);
+
+    // The atoms themselves are untouched: same pool, same colours.
+    const pool = engine.snapshot().molecule.atoms.filter((a) => a.element === 'H' && a.state === 'free');
+    assert.ok(pool.length > 0, `${molecule} still draws a pool`);
+    assert.ok(new Set(pool.map((a) => a.family)).size > 1, `${molecule} still offers more than one family`);
+  }
 });
