@@ -74,14 +74,41 @@ export const VISIBLE_CHIPS = 8;
 export const MOTION = {
   /** Pause before the first prefix is announced. */
   startDelay: 500,
-  /** How long each prefix rests before the next one. */
+  /** How long a prefix with a line of its own rests before the next one. */
   hold: 2600,
+  /**
+   * How long the rest rest.
+   *
+   * Only the first four chips are spoken about. Holding the other six for as
+   * long left nine seconds in which nothing was said and the rail went on
+   * ticking - the point had landed and the animation carried on anyway. They
+   * are still shown one at a time, long enough to read, and no longer.
+   */
+  holdAfterNarration: 1200,
   /** Chip growth, halo slide and badge travel. */
   transition: 480,
   /** Instruction card crossfade. */
   copyFade: 240,
   easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
 } as const;
+
+/**
+ * How many chips are narrated: Meth, Eth, Prop, and But - which also carries
+ * the line naming everything after it. See `voiceForPrefix`.
+ */
+export const NARRATED_PREFIXES = 4;
+
+/** How long the rail rests on the chip at `index` before moving on. */
+export function prefixHoldMs(index: number): number {
+  return index < NARRATED_PREFIXES ? MOTION.hold : MOTION.holdAfterNarration;
+}
+
+/** How long the walk takes, from the first chip until it rests on the last. */
+export function railWalkMs(): number {
+  let total = 0;
+  for (let i = 0; i < PREFIXES.length - 1; i += 1) total += prefixHoldMs(i);
+  return total;
+}
 
 /** The active chip is the inactive chip scaled by exactly this factor. */
 export const ACTIVE_SCALE = 130.651 / 106;

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { InstructionCard } from '../../components/InstructionCard';
 import { StudyPaper } from './components/StudyPaper';
 import { PrefixRail } from './components/PrefixRail';
-import { MOTION, PREFIXES } from './data/prefixes';
+import { PREFIXES, prefixHoldMs } from './data/prefixes';
 import type { PrefixEventHandler } from './events';
 
 /**
@@ -29,7 +29,9 @@ type Props = {
 
 export function PrefixIntroScreen({ onEvent, autoPlay = true, startIndex = 0, onContinue }: Props) {
   const [activeIndex, setActiveIndex] = useState(startIndex);
-  const [playing, setPlaying] = useState(autoPlay);
+  // The walk is on or off for the life of the screen now: nothing stops it
+  // part-way, because nothing may take it over while it is playing.
+  const playing = autoPlay;
   const previousIndex = useRef(startIndex);
   const started = useRef(false);
 
@@ -63,14 +65,17 @@ export function PrefixIntroScreen({ onEvent, autoPlay = true, startIndex = 0, on
   useEffect(() => {
     if (!playing) return;
     if (activeIndex >= PREFIXES.length - 1) return;
-    const delay = activeIndex === 0 && !started.current ? MOTION.startDelay : MOTION.hold;
+    const delay = prefixHoldMs(activeIndex);
     const timer = window.setTimeout(() => setActiveIndex((index) => index + 1), delay);
     return () => window.clearTimeout(timer);
   }, [activeIndex, playing]);
 
-  // A learner taking over stops the automatic walk.
+  // While the sequence is playing it plays itself. A chip press used to take
+  // it over, which would let a learner jump past a prefix - and past the line
+  // being said about it - in a stretch of the lesson that is meant to be
+  // watched. With the walk stopped (`?autoplay=off`) the chips still work.
   const handleSelect = (index: number) => {
-    setPlaying(false);
+    if (playing) return;
     setActiveIndex(index);
   };
 

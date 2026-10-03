@@ -1,4 +1,4 @@
-import { Suspense, lazy, useCallback, useEffect, useState } from 'react';
+import { lazy, startTransition, useCallback, useEffect, useState } from 'react';
 import { useAuth } from './auth/AuthContext';
 import { Stage } from './stage/Stage';
 import { OnboardingScreen } from './screens/onboarding/OnboardingScreen';
@@ -12,6 +12,7 @@ import { useLessonVoice, usePrefixVoice, useWalkthroughVoice } from './game/voic
 import { GAMEPLAY_STEPS } from './screens/gameplay/flow/steps';
 import { assetsForScreen } from './screens/screenAssets.ts';
 import { preloadAssets } from './screens/assetPreloader.ts';
+import { holdFor, playsItself } from './screens/lessonTimeline.ts';
 import {
   WARM_GAMEPLAY_ASSETS_FROM,
   nextScreen,
@@ -207,6 +208,35 @@ export default function App() {
     void import('./screens/gameplay/live/LiveGameplay');
   }, [screen]);
 
+  /** `?autoplay=off` hands the lesson back to the student, for Figma checks. */
+  const autoPlay = new URLSearchParams(window.location.search).get('autoplay') !== 'off';
+
+  /**
+   * The lesson plays itself.
+   *
+   * The nickname rail and the three bond screens are one continuous stretch of
+   * teaching: the student watches it rather than clicking through it, so the
+   * flow holds each frame for as long as its narration needs and then moves
+   * on. None of these screens is given an `onContinue` below, so there is no
+   * control to press and nothing to skip - the timer is the only way forward.
+   *
+   * `?autoplay=off` freezes the stretch for looking at a frame against Figma,
+   * which is the one case where it must not advance by itself.
+   */
+  useEffect(() => {
+    if (!autoPlay) return;
+    const hold = holdFor(screen);
+    if (hold === null) return;
+    const timer = window.setTimeout(() => {
+      // The game is a split chunk, so arriving at it suspends for a moment.
+      // Marked as a transition, React keeps the frame already on screen until
+      // the game can draw instead of swapping it for Suspense's empty
+      // fallback - which is what put a blank frame between the two.
+      startTransition(advance);
+    }, hold);
+    return () => window.clearTimeout(timer);
+  }, [screen, advance, autoPlay]);
+
   /**
    * Fetch the next screen's images while this one is being read.
    *
@@ -246,44 +276,43 @@ export default function App() {
   //
   // The walkthrough is the Figma flow played as a demonstration; its last
   // frame now leads into the game rather than stopping there.
-  if (screen === 'gameplay')
-    return (
-      <Suspense fallback={null}>
-        <GameplayFlow onContinue={advance} onStepChange={onWalkthroughStep} />
-      </Suspense>
-    );
+  if (screen === 'gameplay') return <GameplayFlow onContinue={advance} onStepChange={onWalkthroughStep} />;
   // The game itself: ?molecule=methane|ethane|propane chooses the challenge.
   if (screen === 'play') {
     return (
-      <Suspense fallback={null}>
-        <LiveGameplay
-          molecule={molecule}
-          // Finishing one molecule moves the round on to the next; the prefix
-          // rail already lights the chip for whichever is being built.
-          nextMolecule={nextAlkane(molecule)}
-          onAdvance={setMolecule}
-          // No way back to the walkthrough: it is no longer where the student
-          // came from. `GameControls` already draws the summary without it,
-          // widening "Play again" to fill the row.
-        />
-      </Suspense>
+      <LiveGameplay
+        molecule={molecule}
+        // Finishing one molecule moves the round on to the next; the prefix
+        // rail already lights the chip for whichever is being built.
+        nextMolecule={nextAlkane(molecule)}
+        onAdvance={setMolecule}
+        // No way back to the walkthrough: it is no longer where the student
+        // came from. `GameControls` already draws the summary without it,
+        // widening "Play again" to fill the row.
+      />
     );
   }
 
   return (
     <Stage width={CANVAS[screen].width} height={CANVAS[screen].height} content={CANVAS[screen].content}>
-      {screen === 'signIn' && <OnboardingScreen onContinueWithoutGoogle={advance} />}
-      {screen === 'prefixIntro' && (
-        <PrefixIntroScreen
-          onEvent={handlePrefixEvent}
-          autoPlay={new URLSearchParams(window.location.search).get('autoplay') !== 'off'}
-          startIndex={Number(new URLSearchParams(window.location.search).get('prefix') ?? 0)}
-          onContinue={advance}
-        />
-      )}
-      {screen === 'alkane' && <AlkaneScreen onContinue={advance} />}
-      {screen === 'alkene' && <AlkeneScreen onContinue={advance} />}
-      {screen === 'alkyne' && <AlkyneScreen onContinue={advance} />}
+      {/* Keyed on the screen so each frame fades in as the last gives way. */}
+      <div key={screen} className="lessonFade" style={{ position: 'absolute', inset: 0 }}>
+        {screen === 'signIn' && <OnboardingScreen onContinueWithoutGoogle={advance} />}
+        {screen === 'prefixIntro' && (
+          <PrefixIntroScreen
+            onEvent={handlePrefixEvent}
+            autoPlay={autoPlay}
+            startIndex={Number(new URLSearchParams(window.location.search).get('prefix') ?? 0)}
+            // No `onContinue`: `InstructionCard` draws a plain div rather than a
+            // button when it has nowhere to go, so there is no control here at
+            // all - not a hidden one.
+            onContinue={playsItself('prefixIntro') && autoPlay ? undefined : advance}
+          />
+        )}
+        {screen === 'alkane' && <AlkaneScreen onContinue={playsItself('alkane') && autoPlay ? undefined : advance} />}
+        {screen === 'alkene' && <AlkeneScreen onContinue={playsItself('alkene') && autoPlay ? undefined : advance} />}
+        {screen === 'alkyne' && <AlkyneScreen onContinue={playsItself('alkyne') && autoPlay ? undefined : advance} />}
+      </div>
     </Stage>
   );
 }

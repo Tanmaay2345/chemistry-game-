@@ -111,8 +111,30 @@ p {
   }
 }
 
+/*
+ * One lesson frame giving way to the next. The nickname rail and the three
+ * bond screens play as a single stretch, so they are faded rather than cut:
+ * the rail and the ruled frame sit in the same place on all of them, and only
+ * what they are saying changes.
+ */
+.lessonFade {
+  animation: lessonFadeIn 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes lessonFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.994);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .cardCopy {
+  .cardCopy,
+  .lessonFade {
     animation: none;
   }
 }
