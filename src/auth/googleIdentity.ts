@@ -171,6 +171,7 @@ export type SignIn = () => void;
  */
 export async function prepareGoogleSignIn(
   onAccessToken: (accessToken: string) => void,
+  onFailure: () => void = () => {},
 ): Promise<SignIn | null> {
   const clientId = googleClientId();
   if (!clientId) return null;
@@ -189,9 +190,16 @@ export async function prepareGoogleSignIn(
       // userinfo endpoint. It is never logged, stored or put in the URL.
       if (response?.access_token) onAccessToken(response.access_token);
     },
-    // Fired when Google could not even open - a blocked popup, say. Nothing to
-    // report to the student beyond leaving them able to try again.
-    error_callback: () => {},
+    // Fired when the attempt ends without a token: a popup the browser
+    // refused, a window the student closed, or an account Google would not
+    // authorise - a project still in testing refuses everyone who is not on
+    // its test-user list, and says so in the popup rather than to the page.
+    //
+    // Discarding this left the card looking like a button that does nothing,
+    // which is what it looked like to everyone it refused. The reason Google
+    // gives is not passed on: it is not written for a student, and it is not
+    // this layer's to interpret. That the attempt failed is enough.
+    error_callback: () => onFailure(),
   });
 
   return () => client.requestAccessToken();

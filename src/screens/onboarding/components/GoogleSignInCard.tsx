@@ -49,7 +49,7 @@ const card: CSSProperties = {
 };
 
 export function GoogleSignInCard({ onContinueWithoutGoogle }: Props) {
-  const { signInAvailable, signIn, status } = useAuth();
+  const { signInAvailable, signIn, signInError, status } = useAuth();
 
   // Google when it is there, and the plain step forward when it is not, so the
   // first screen is never a dead end.
@@ -74,8 +74,25 @@ export function GoogleSignInCard({ onContinueWithoutGoogle }: Props) {
         <p style={{ fontFamily: 'Lexend, sans-serif', fontWeight: 600, position: 'relative', flexShrink: 0, fontSize: 24, color: '#000000', width: '100%' }}>
           Sign in with Google
         </p>
-        <p style={{ fontFamily: 'Lexend, sans-serif', fontWeight: 500, position: 'relative', flexShrink: 0, color: '#6d6d6d', fontSize: 18, width: '100%' }}>
-          So you can give us email to get feedback .
+        {/*
+          The card's own second line, or the reason the last attempt did not
+          finish. One line either way: a message added beside this one would
+          grow the card past the frame drawn around it, and two sentences
+          competing for the same glance is not clearer than one.
+         */}
+        <p
+          role={signInError ? 'alert' : undefined}
+          style={{
+            fontFamily: 'Lexend, sans-serif',
+            fontWeight: 500,
+            position: 'relative',
+            flexShrink: 0,
+            color: signInError ? '#c2341d' : '#6d6d6d',
+            fontSize: 18,
+            width: '100%',
+          }}
+        >
+          {signInError ?? 'So you can give us email to get feedback .'}
         </p>
       </div>
       <div style={{ position: 'absolute', height: 0, left: 1, top: 116, width: 39 }}>

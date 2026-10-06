@@ -23,13 +23,64 @@ export type AuthStatus =
 export type AuthState = {
   status: AuthStatus;
   user: GoogleIdentity | null;
+  /**
+   * Why the last attempt did not finish, in words for the student.
+   *
+   * Google refuses a sign-in for reasons the page cannot see - an account that
+   * is not on the project's test-user list, a popup the browser closed, a
+   * network that dropped. Those used to be discarded, which left the card
+   * looking like a button that does nothing. Never holds a token, an address
+   * or a client id: only a sentence.
+   */
+  error: string | null;
 };
 
-export const initialAuthState: AuthState = { status: 'loading', user: null };
+/** Why an attempt ended, which is as much as the page is told. */
+export type SignInFailure =
+  /** Google would not authorise the attempt, or the popup never finished. */
+  | 'authorization'
+  /** Google authorised it, but the account could not be read afterwards. */
+  | 'identity';
+
+/** What the student is told. Deliberately short, and free of anything secret. */
+export const SIGN_IN_FAILURE_MESSAGE: Readonly<Record<SignInFailure, string>> = {
+  // Only ever "try again": where Google is available the card always asks
+  // Google, so offering to carry on without it would promise a way forward
+  // the card does not have.
+  authorization: 'Google sign-in did not finish. Press to try again.',
+  identity: 'Signed in, but your account could not be read. Press to try again.',
+};
+
+export const initialAuthState: AuthState = { status: 'loading', user: null, error: null };
 
 /** Google's script is ready, or has failed: either way nobody is identified yet. */
 export function ready(state: AuthState): AuthState {
-  return state.status === 'signed_in' ? state : { status: 'signed_out', user: null };
+  return state.status === 'signed_in' ? state : { status: 'signed_out', user: null, error: state.error };
+}
+
+/**
+ * A fresh attempt begins.
+ *
+ * Clears whatever the last one said, so a student who presses again is not
+ * reading the reason the previous press failed.
+ */
+export function signInStarted(state: AuthState): AuthState {
+  return state.error === null ? state : { ...state, error: null };
+}
+
+/**
+ * An attempt ended without identifying anybody.
+ *
+ * It leaves the student where they were and able to try again: the status only
+ * moves on from `loading`, so a failure never advances the flow and never
+ * signs anyone in.
+ */
+export function signInFailed(state: AuthState, failure: SignInFailure): AuthState {
+  return {
+    status: state.status === 'loading' ? 'signed_out' : state.status,
+    user: state.user,
+    error: SIGN_IN_FAILURE_MESSAGE[failure],
+  };
 }
 
 /**
@@ -40,8 +91,9 @@ export function ready(state: AuthState): AuthState {
  * try again.
  */
 export function identityReceived(state: AuthState, user: GoogleIdentity | null): AuthState {
-  if (!user) return state.status === 'loading' ? { status: 'signed_out', user: null } : state;
-  return { status: 'signed_in', user };
+  if (!user) return state.status === 'loading' ? { status: 'signed_out', user: null, error: state.error } : state;
+  // Arriving clears whatever the last attempt said: it is no longer true.
+  return { status: 'signed_in', user, error: null };
 }
 
 /**
@@ -62,5 +114,5 @@ export function credentialReceived(state: AuthState, credential: string): AuthSt
  * Nothing was written to storage, so nothing has to be cleared.
  */
 export function signedOut(): AuthState {
-  return { status: 'signed_out', user: null };
+  return { status: 'signed_out', user: null, error: null };
 }

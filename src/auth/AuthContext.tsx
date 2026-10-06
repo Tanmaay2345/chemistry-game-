@@ -1,5 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { identityReceived, initialAuthState, ready, signedOut, type AuthState } from './authState.ts';
+import {
+  identityReceived,
+  initialAuthState,
+  ready,
+  signInFailed,
+  signInStarted,
+  signedOut,
+  type AuthState,
+} from './authState.ts';
 import { prepareGoogleSignIn, type SignIn } from './googleIdentity.ts';
 import { fetchGoogleIdentity } from './googleUserinfo.ts';
 import type { GoogleIdentity } from './decodeIdToken.ts';
@@ -25,6 +33,8 @@ type AuthValue = {
   user: GoogleIdentity | null;
   /** True once Google can be asked. False leaves the card to its fallback. */
   signInAvailable: boolean;
+  /** Why the last attempt did not finish, or null. Safe to show; never secret. */
+  signInError: string | null;
   /** Starts Google's popup. Must be called from the student's own click. */
   signIn: () => void;
   /** Forgets the identity. In memory: there is no session to end. */
@@ -44,12 +54,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const onAccessToken = async (accessToken: string) => {
       const identity = await fetchGoogleIdentity(accessToken);
       if (!live) return;
-      // An identity that could not be read leaves the state alone, so a failed
-      // attempt strands nobody.
+      // Authorised, but the account could not be read. A separate failure from
+      // being refused, and said separately, because the student can act on the
+      // difference: this one is worth simply trying again.
+      if (!identity) {
+        setState((current) => signInFailed(current, 'identity'));
+        return;
+      }
       setState((current) => identityReceived(current, identity));
     };
 
-    void prepareGoogleSignIn((token) => void onAccessToken(token)).then((signIn) => {
+    const onFailure = () => {
+      if (!live) return;
+      setState((current) => signInFailed(current, 'authorization'));
+    };
+
+    void prepareGoogleSignIn((token) => void onAccessToken(token), onFailure).then((signIn) => {
       if (!live) return;
       requestSignIn.current = signIn;
       setSignInAvailable(signIn !== null);
@@ -64,14 +84,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = useCallback(() => {
+    // Clear the last reason before asking again, so the card is never showing
+    // why the previous press failed while this one is still open.
+    setState(signInStarted);
     requestSignIn.current?.();
   }, []);
 
   const signOut = useCallback(() => setState(signedOut()), []);
 
   const value = useMemo<AuthValue>(
-    () => ({ status: state.status, user: state.user, signInAvailable, signIn, signOut }),
-    [state.status, state.user, signInAvailable, signIn, signOut],
+    () => ({ status: state.status, user: state.user, signInError: state.error, signInAvailable, signIn, signOut }),
+    [state.status, state.user, state.error, signInAvailable, signIn, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
